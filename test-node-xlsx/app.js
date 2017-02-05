@@ -4,9 +4,9 @@ const xlsx = require("node-xlsx");
 
 
 const list = xlsx.parse(__dirname + '/test.xlsx')[0].data;
-app.get('/list', function (req, res) {
-  res.send({data:list})
-})
+// app.get('/list', function (req, res) {
+//   res.send({data:list})
+// })
 
 const server = app.listen(7777, function () {
 
@@ -30,9 +30,6 @@ db.serialize(function() {
   }
   stmt.finalize();
 
-  db.each("SELECT rowid AS id, name FROM record", function(err, row) {
-      console.log(row.name);
-  });
 });
 
 db.close();
