@@ -13,7 +13,9 @@
   "author": "Cedric Song",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.14.1",
+    "express": "~4.10.7",
+    "morgan": "~1.3.0",
+    "connect-multiparty": "~1.2.5",
     "node-xlsx": "^0.7.4",
     "sqlite3": "^3.1.8"
   }

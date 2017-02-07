@@ -1,0 +1,140 @@
+<!DOCTYPE>
+<html>
+
+<head>
+    <title>Upload Files using XMLHttpRequest - Minimal</title>
+    <script src="http://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
+    <script type="text/javascript">
+    function fileSelected() {
+        var file = document.getElementById('fileToUpload').files[0];
+        if (file) {
+            var fileSize = 0;
+            if (file.size > 1024 * 1024)
+                fileSize = (Math.round(file.size * 100 / (1024 * 1024)) / 100).toString() + 'MB';
+            else
+                fileSize = (Math.round(file.size * 100 / 1024) / 100).toString() + 'KB';
+
+            document.getElementById('fileName').innerHTML = 'Name: ' + file.name;
+            document.getElementById('fileSize').innerHTML = 'Size: ' + fileSize;
+            document.getElementById('fileType').innerHTML = 'Type: ' + file.type;
+        }
+    }
+
+    function uploadFile() {
+        
+        var fd = new FormData($("#frmUploadFile")[0]);
+        // fd.append("fileToUpload", document.getElementById('fileToUpload').files[0]);
+        var xhr = new XMLHttpRequest();
+        xhr.upload.addEventListener("progress", uploadProgress, false);
+        xhr.addEventListener("load", uploadComplete, false);
+        xhr.addEventListener("error", uploadFailed, false);
+        xhr.addEventListener("abort", uploadCanceled, false);
+        xhr.open("POST", "http://localhost:7777/uploadFile");
+        xhr.send(fd);
+    }
+
+    function uploadProgress(evt) {
+        if (evt.lengthComputable) {
+            var percentComplete = Math.round(evt.loaded * 100 / evt.total);
+            document.getElementById('progressNumber').innerHTML = percentComplete.toString() + '%';
+        } else {
+            document.getElementById('progressNumber').innerHTML = 'unable to compute';
+        }
+    }
+
+    function uploadComplete(evt) {
+        /* This event is raised when the server send back a response */
+        alert(evt.target.responseText);
+    }
+
+    function uploadFailed(evt) {
+        alert("There was an error attempting to upload the file.");
+    }
+
+    function uploadCanceled(evt) {
+        alert("The upload has been canceled by the user or the browser dropped the connection.");
+    }
+    </script>
+</head>
+
+<body>
+    <form class = "form-horizontal" enctype='multipart/form-data' method='post' action='javascript:;' role = "form" id = "frmUploadFile">
+        <div class="row">
+            <label for="fileToUpload">Select a File to Upload</label>
+            <input type="file" name="files" id="fileToUpload" onchange="fileSelected();" />
+        </div>
+        <div id="fileName"></div>
+        <div id="fileSize"></div>
+        <div id="fileType"></div>
+        <div class="row">
+            <input type="button" onclick="uploadFile()" value="Upload" />
+        </div>
+        <div id="progressNumber"></div>
+    </form>
+</body>
+
+</html>
+
+<!-- <!DOCTYPE html>
+<html lang="zh-cmn-Hans">
+
+<head>
+    <title>Node.js Ajax Upload File</title>
+    <link type="text/css" rel="stylesheet" href="http://apps.bdimg.com/libs/bootstrap/3.3.0/css/bootstrap.min.css">
+    <link type="text/css" rel="stylesheet" href="http://apps.bdimg.com/libs/bootstrap/3.3.0/css/bootstrap-theme.min.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="page-header">
+            <h2>Node.js Ajax Upload File</h2>
+        </div>
+        <form class="form-horizontal" enctype='multipart/form-data' method='post' action='javascript:;' role="form" id="frmUploadFile">
+            <div class="form-group">
+                <label class="control-label col-sm-2">上传选择</label>
+                <div class="col-sm-4">
+                    <input type="file" name="files" class="form-control" />
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-offset-2 col-sm-4">
+                    <button class="btn btn-primary" onClick="uploadFile()">上传</button>
+                    <span class="help-inline" id="spanMessage">选择文件，并上传</span>
+                </div>
+            </div>
+        </form>
+        <div class="row" style="text-align: center">
+            <img id="imgShow" />
+        </div>
+    </div>
+    <script src="http://apps.bdimg.com/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script>
+    function uploadFile() {
+        var formData = new FormData($("#frmUploadFile")[0]);
+        $.ajax({
+            url: '/uploadFile',
+            type: 'POST',
+            data: formData,
+            async: false,
+            cache: false,
+            contentType: false,
+            processData: false,
+            success: function(data) {
+                if (200 === data.code) {
+                    $("#imgShow").attr('src', data.msg.url);
+                    $("#spanMessage").html("上传成功");
+                } else {
+                    $("#spanMessage").html("上传失败");
+                }
+                console.log('imgUploader upload success, data:', data);
+            },
+            error: function() {
+                $("#spanMessage").html("与服务器通信发生错误");
+            }
+        });
+    }
+    </script>
+</body>
+
+</html>
+ -->
