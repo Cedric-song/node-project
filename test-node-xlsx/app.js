@@ -8,17 +8,13 @@ const app = express();
 
 app.use(express.static('./public'));
 
-const list = xlsx.parse(__dirname + '/test.xlsx')[0].data;
-app.get('/list', function (req, res) {
-  res.send({data:list})
-})
 
 const server = app.listen(7777, function() {
 
-  const host = server.address().address
-  const port = server.address().port
+    const host = server.address().address
+    const port = server.address().port
 
-  console.log('Server is working!')
+    console.log('Server is working!')
 })
 
 
@@ -41,31 +37,88 @@ const server = app.listen(7777, function() {
 
 
 app.post('/uploadFile', multipart(), function(req, res) {
-  //get filename
-  const filename = req.files.files.originalFilename || path.basename(req.files.files.ws.path);
-  //copy file to a public directory
-  const targetPath = path.dirname(__filename) + '/public/' + filename;
-  //copy file
-  fs.createReadStream(req.files.files.ws.path).pipe(fs.createWriteStream(targetPath));
-  //return file url
-  res.json({
+    //get filename
+    const filename = req.files.files.originalFilename || path.basename(req.files.files.ws.path);
+    //copy file to a public directory
+    const targetPath = path.dirname(__filename) + '/public/' + filename;
+    //copy file
+    fs.createReadStream(req.files.files.ws.path).pipe(fs.createWriteStream(targetPath));
+    //return file url
+
+    if (targetPath.endsWith('xlsx')) {
+        let _json = Object.assign(successJson)
+        _json.result = {
+            url: 'http://' + req.headers.host + '/' + filename,
+            targetPath: targetPath
+        }
+        res.json(_json);
+    } else {
+        let _json = Object.assign(failJson)
+        _json.msg = 'please upload xlsx file'
+        res.json(_json);
+    }
+});
+
+
+app.get('/getList', function(req, res) {
+    const list = xlsx.parse(req.query.targetPath)[0].data;
+    let h = list.shift()
+    let arr = []
+    list.forEach(function(item) {
+        arr.push({
+            cardID: item[h.indexOf('考勤号码')],
+            date: item[h.indexOf('日期')],
+            name: item[h.indexOf('姓名')],
+            ondutyTime: item[h.indexOf('签到时间')],
+            offdutyTime: item[h.indexOf('签退时间')],
+            isOverTime: item[h.indexOf('签退时间')] !== "" && item[h.indexOf('签退时间')].slice(0, 2) > 20 ? true : false,
+            overTimeLength: createOverTimeLength(item[h.indexOf('签退时间')], '18:00')
+        })
+    })
+
+    let _json = Object.assign(successJson)
+    _json.result = {
+        data: arr
+    }
+    res.json(_json)
+})
+
+
+app.get('/env', function(req, res) {
+    console.log("process.env.VCAP_SERVICES: ", process.env.VCAP_SERVICES);
+    console.log("process.env.DATABASE_URL: ", process.env.DATABASE_URL);
+    console.log("process.env.VCAP_APPLICATION: ", process.env.VCAP_APPLICATION);
+    res.json({
+        code: 200,
+        msg: {
+            VCAP_SERVICES: process.env.VCAP_SERVICES,
+            DATABASE_URL: process.env.DATABASE_URL
+        }
+    });
+});
+
+
+function createOverTimeLength(offdutyTime, dutyTime) {
+    if (offdutyTime === "") {
+        return 0
+    }
+    const odt = Number.parseInt(offdutyTime.slice(0, 2)) * 60 + Number.parseInt(offdutyTime.slice(3))
+    const dt = Number.parseInt(dutyTime.slice(0, 2)) * 60 + Number.parseInt(dutyTime.slice(3))
+    if (odt - dt > 120) {
+        return odt - dt
+    }
+    return 0
+}
+
+
+var successJson = {
     code: 200,
-    msg: {
-      url: 'http://' + req.headers.host + '/' + filename
-    }
-  });
-});
+    msg: 'success',
+    result: {}
+}
 
-
-app.get('/env', function(req, res){
-  console.log("process.env.VCAP_SERVICES: ", process.env.VCAP_SERVICES);
-  console.log("process.env.DATABASE_URL: ", process.env.DATABASE_URL);
-  console.log("process.env.VCAP_APPLICATION: ", process.env.VCAP_APPLICATION);
-  res.json({
-    code: 200
-    , msg: {
-      VCAP_SERVICES: process.env.VCAP_SERVICES
-      , DATABASE_URL: process.env.DATABASE_URL
-    }
-  });
-});
+var failJson = {
+    code: 100,
+    msg: 'fail',
+    result: {}
+}

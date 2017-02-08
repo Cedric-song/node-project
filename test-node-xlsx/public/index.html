@@ -1,9 +1,26 @@
 <!DOCTYPE>
-<html>
-
+<html lang="zh-cmn-Hans">
 <head>
     <title>Upload Files using XMLHttpRequest - Minimal</title>
+    <style>
+        #btn-create {
+            display: none;
+        }
+
+        #formList ul li {
+            display: inline-block;
+        }
+    </style>
     <script src="http://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.11.0/bootstrap-table.min.css">
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.11.0/bootstrap-table.min.js"></script>
+
+    <!-- Latest compiled and minified Locales -->
+    <script src="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.11.0/locale/bootstrap-table-zh-CN.min.js"></script>
+
     <script type="text/javascript">
     function fileSelected() {
         var file = document.getElementById('fileToUpload').files[0];
@@ -44,7 +61,10 @@
 
     function uploadComplete(evt) {
         /* This event is raised when the server send back a response */
-        alert(evt.target.responseText);
+        var data = JSON.parse(evt.target.response)
+        if( data.code === 200 ){
+            $('#btn-create').attr('data-targetPath',data.result.targetPath).show()
+        }
     }
 
     function uploadFailed(evt) {
@@ -54,9 +74,31 @@
     function uploadCanceled(evt) {
         alert("The upload has been canceled by the user or the browser dropped the connection.");
     }
+
+    function getList(item){
+        var self = item 
+        
+        $.get('/getList?targetPath=' + $(self).attr('data-targetPath') + '&cate', function(data) {
+            var items = data.result.data
+            var arr = []
+            items.forEach(function(item){
+                arr.push(`
+                    <tr>
+                        <td> ${item.cardID}</td>
+                        <td> ${item.date}</td>
+                        <td> ${item.name}</td>
+                        <td> ${item.ondutyTime}</td>
+                        <td> ${item.offdutyTime}</td>
+                        <td> ${item.isOverTime === 'false' ? '是' : '否'} </td>
+                        <td> ${item.overTimeLength}</td>
+                    </tr>    
+                `)
+            })
+            $("#formList").append(arr.join(""))
+        })
+    }
     </script>
 </head>
-
 <body>
     <form class = "form-horizontal" enctype='multipart/form-data' method='post' action='javascript:;' role = "form" id = "frmUploadFile">
         <div class="row">
@@ -71,70 +113,20 @@
         </div>
         <div id="progressNumber"></div>
     </form>
-</body>
 
-</html>
-
-<!-- <!DOCTYPE html>
-<html lang="zh-cmn-Hans">
-
-<head>
-    <title>Node.js Ajax Upload File</title>
-    <link type="text/css" rel="stylesheet" href="http://apps.bdimg.com/libs/bootstrap/3.3.0/css/bootstrap.min.css">
-    <link type="text/css" rel="stylesheet" href="http://apps.bdimg.com/libs/bootstrap/3.3.0/css/bootstrap-theme.min.css">
-</head>
-
-<body>
-    <div class="container">
-        <div class="page-header">
-            <h2>Node.js Ajax Upload File</h2>
-        </div>
-        <form class="form-horizontal" enctype='multipart/form-data' method='post' action='javascript:;' role="form" id="frmUploadFile">
-            <div class="form-group">
-                <label class="control-label col-sm-2">上传选择</label>
-                <div class="col-sm-4">
-                    <input type="file" name="files" class="form-control" />
-                </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-offset-2 col-sm-4">
-                    <button class="btn btn-primary" onClick="uploadFile()">上传</button>
-                    <span class="help-inline" id="spanMessage">选择文件，并上传</span>
-                </div>
-            </div>
-        </form>
-        <div class="row" style="text-align: center">
-            <img id="imgShow" />
-        </div>
+    <button id="btn-create" onclick="getList(this)">create data</button>
+    <div>
+        <table border="1" id="formList">
+          <tr>
+            <th>考勤号码</th>
+            <th>日期</th>
+            <th>姓名</th>
+            <th>上班卡</th>
+            <th>下班卡</th>
+            <th>是否加班</th>
+            <th>加班时长</th>
+          </tr>
+        </table>
     </div>
-    <script src="http://apps.bdimg.com/libs/jquery/2.1.1/jquery.min.js"></script>
-    <script>
-    function uploadFile() {
-        var formData = new FormData($("#frmUploadFile")[0]);
-        $.ajax({
-            url: '/uploadFile',
-            type: 'POST',
-            data: formData,
-            async: false,
-            cache: false,
-            contentType: false,
-            processData: false,
-            success: function(data) {
-                if (200 === data.code) {
-                    $("#imgShow").attr('src', data.msg.url);
-                    $("#spanMessage").html("上传成功");
-                } else {
-                    $("#spanMessage").html("上传失败");
-                }
-                console.log('imgUploader upload success, data:', data);
-            },
-            error: function() {
-                $("#spanMessage").html("与服务器通信发生错误");
-            }
-        });
-    }
-    </script>
 </body>
-
 </html>
- -->
