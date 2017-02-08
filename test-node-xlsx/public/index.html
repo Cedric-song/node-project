@@ -3,7 +3,7 @@
 <head>
     <title>Upload Files using XMLHttpRequest - Minimal</title>
     <style>
-        #btn-create {
+        .hide {
             display: none;
         }
 
@@ -12,15 +12,6 @@
         }
     </style>
     <script src="http://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
-    <!-- Latest compiled and minified CSS -->
-    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.11.0/bootstrap-table.min.css">
-
-    <!-- Latest compiled and minified JavaScript -->
-    <script src="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.11.0/bootstrap-table.min.js"></script>
-
-    <!-- Latest compiled and minified Locales -->
-    <script src="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.11.0/locale/bootstrap-table-zh-CN.min.js"></script>
-
     <script type="text/javascript">
     function fileSelected() {
         var file = document.getElementById('fileToUpload').files[0];
@@ -63,7 +54,7 @@
         /* This event is raised when the server send back a response */
         var data = JSON.parse(evt.target.response)
         if( data.code === 200 ){
-            $('#btn-create').attr('data-targetPath',data.result.targetPath).show()
+            $('.btn-create').attr('data-targetPath',data.result.targetPath).show()
         }
     }
 
@@ -78,7 +69,7 @@
     function getList(item){
         var self = item 
         
-        $.get('/getList?targetPath=' + $(self).attr('data-targetPath') + '&cate', function(data) {
+        $.get('/getList?targetPath=' + $(self).attr('data-targetPath') + '&category=' + $(self).attr('data-category'), function(data) {
             var items = data.result.data
             var arr = []
             items.forEach(function(item){
@@ -89,10 +80,10 @@
                         <td> ${item.name}</td>
                         <td> ${item.ondutyTime}</td>
                         <td> ${item.offdutyTime}</td>
-                        <td> ${item.isOverTime === 'false' ? '是' : '否'} </td>
+                        <td> ${item.isOverTime === true ? '是' : '否'} </td>
                         <td> ${item.overTimeLength}</td>
                     </tr>    
-                `)
+                `.trim())
             })
             $("#formList").append(arr.join(""))
         })
@@ -114,7 +105,10 @@
         <div id="progressNumber"></div>
     </form>
 
-    <button id="btn-create" onclick="getList(this)">create data</button>
+    <button class="btn-create hide" data-category="all" onclick="getList(this)">create all data</button>
+    <button class="btn-create hide" data-category="workOverTime" onclick="getList(this)">create workOverTime data</button>
+    <button class="btn-create hide" data-category="late" onclick="getList(this)">create late data</button>
+    <button class="btn-create hide" data-category="latePunish" onclick="getList(this)">create latePunish data</button>
     <div>
         <table border="1" id="formList">
           <tr>

@@ -62,19 +62,45 @@ app.post('/uploadFile', multipart(), function(req, res) {
 
 app.get('/getList', function(req, res) {
     const list = xlsx.parse(req.query.targetPath)[0].data;
+    const category = req.query.category
     let h = list.shift()
     let arr = []
-    list.forEach(function(item) {
-        arr.push({
-            cardID: item[h.indexOf('考勤号码')],
-            date: item[h.indexOf('日期')],
-            name: item[h.indexOf('姓名')],
-            ondutyTime: item[h.indexOf('签到时间')],
-            offdutyTime: item[h.indexOf('签退时间')],
-            isOverTime: item[h.indexOf('签退时间')] !== "" && item[h.indexOf('签退时间')].slice(0, 2) > 20 ? true : false,
-            overTimeLength: createOverTimeLength(item[h.indexOf('签退时间')], '18:00')
+    if ( category === "all"){
+        
+        list.forEach(function(item) {
+            arr.push({
+                cardID: item[h.indexOf('考勤号码')],
+                date: item[h.indexOf('日期')],
+                name: item[h.indexOf('姓名')],
+                ondutyTime: item[h.indexOf('签到时间')],
+                offdutyTime: item[h.indexOf('签退时间')],
+                isOverTime: item[h.indexOf('签退时间')] !== "" && item[h.indexOf('签退时间')].slice(0, 2) > 20 ? true : false,
+                overTimeLength: createOverTimeLength(item[h.indexOf('签退时间')], '18:00')
+            })
         })
-    })
+    } else if ( category === "workOverTime" ){
+        
+            list.forEach(function(item) {
+                if( item[h.indexOf('签退时间')] !== "" && item[h.indexOf('签退时间')].slice(0, 2) > 20  ) {
+                    arr.push({
+                        cardID: item[h.indexOf('考勤号码')],
+                        date: item[h.indexOf('日期')],
+                        name: item[h.indexOf('姓名')],
+                        ondutyTime: item[h.indexOf('签到时间')],
+                        offdutyTime: item[h.indexOf('签退时间')],
+                        isOverTime: item[h.indexOf('签退时间')] !== "" && item[h.indexOf('签退时间')].slice(0, 2) > 20 ? true : false,
+                        overTimeLength: createOverTimeLength(item[h.indexOf('签退时间')], '18:00')
+                    })
+                }
+            })
+        
+        
+    } else if ( category === "late" ){
+        
+    } else if ( category === "latePunish" ){
+
+    }
+    
 
     let _json = Object.assign(successJson)
     _json.result = {
@@ -121,4 +147,12 @@ var failJson = {
     code: 100,
     msg: 'fail',
     result: {}
+}
+
+function isWorkDay(time){
+    const day = new Date(time).getDay()
+    if( day !== 0 || day !== 6 ){
+        return true
+    }
+    return false
 }
