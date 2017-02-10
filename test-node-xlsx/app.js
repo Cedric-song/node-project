@@ -9,7 +9,7 @@ const app = express();
 app.use(express.static('./public'));
 
 
-const server = app.listen(7777, function() {
+const server = app.listen(3000, function() {
 
     const host = server.address().address
     const port = server.address().port
@@ -39,13 +39,14 @@ const server = app.listen(7777, function() {
 app.post('/uploadFile', multipart(), function(req, res) {
     //get filename
     const filename = req.files.files.originalFilename || path.basename(req.files.files.ws.path);
+    // if (filename == null){ _json.msg = 'please choose a file' };
     //copy file to a public directory
-    const targetPath = path.dirname(__filename) + '/public/' + filename;
+    const targetPath = path.dirname(__filename) + '/public/files/' + filename;
     //copy file
-    fs.createReadStream(req.files.files.ws.path).pipe(fs.createWriteStream(targetPath));
     //return file url
 
-    if (targetPath.endsWith('xlsx')) {
+    if (filename.endsWith('xlsx')) {
+        fs.createReadStream(req.files.files.ws.path).pipe(fs.createWriteStream(targetPath));
         let _json = Object.assign(successJson)
         _json.result = {
             url: 'http://' + req.headers.host + '/' + filename,
@@ -62,51 +63,27 @@ app.post('/uploadFile', multipart(), function(req, res) {
 
 app.get('/getList', function(req, res) {
     const list = xlsx.parse(req.query.targetPath)[0].data;
-    const category = req.query.category
     let h = list.shift()
     let arr = []
-    if ( category === "all"){
-        
-        list.forEach(function(item) {
-            arr.push({
-                cardID: item[h.indexOf('考勤号码')],
-                date: item[h.indexOf('日期')],
-                name: item[h.indexOf('姓名')],
-                ondutyTime: item[h.indexOf('签到时间')],
-                offdutyTime: item[h.indexOf('签退时间')],
-                isOverTime: item[h.indexOf('签退时间')] !== "" && item[h.indexOf('签退时间')].slice(0, 2) > 20 ? true : false,
-                overTimeLength: createOverTimeLength(item[h.indexOf('签退时间')], '18:00')
-            })
+    list.forEach(function(item) {
+        arr.push({
+            cardID: item[h.indexOf('考勤号码')],
+            date: item[h.indexOf('日期')],
+            name: item[h.indexOf('姓名')],
+            ondutyTime: item[h.indexOf('签到时间')],
+            offdutyTime: item[h.indexOf('签退时间')],
+            isOnTime: getDelay(item[h.indexOf('签到时间')],item[h.indexOf('签退时间')],item[h.indexOf('日期')]) == 1 ? '是' : '否',
+            isOverTime: item[h.indexOf('签退时间')] !== "" && item[h.indexOf('签退时间')].slice(0, 2) > 20 ? '是' : '否',
+            overTimeLength: createOverTimeLength(item[h.indexOf('签退时间')], '18:00')
         })
-    } else if ( category === "workOverTime" ){
-        
-            list.forEach(function(item) {
-                if( item[h.indexOf('签退时间')] !== "" && item[h.indexOf('签退时间')].slice(0, 2) > 20  ) {
-                    arr.push({
-                        cardID: item[h.indexOf('考勤号码')],
-                        date: item[h.indexOf('日期')],
-                        name: item[h.indexOf('姓名')],
-                        ondutyTime: item[h.indexOf('签到时间')],
-                        offdutyTime: item[h.indexOf('签退时间')],
-                        isOverTime: item[h.indexOf('签退时间')] !== "" && item[h.indexOf('签退时间')].slice(0, 2) > 20 ? true : false,
-                        overTimeLength: createOverTimeLength(item[h.indexOf('签退时间')], '18:00')
-                    })
-                }
-            })
-        
-        
-    } else if ( category === "late" ){
-        
-    } else if ( category === "latePunish" ){
+    })
 
-    }
-    
-
-    let _json = Object.assign(successJson)
-    _json.result = {
-        data: arr
-    }
-    res.json(_json)
+    // let _json = Object.assign(successJson)
+    // _json.result = {
+        // data: arr
+    // }
+    // res.json(_json)
+    res.json(arr)
 })
 
 
@@ -136,6 +113,23 @@ function createOverTimeLength(offdutyTime, dutyTime) {
     return 0
 }
 
+function getDelay(offdutyTime,dutyTime,day){
+    if( (offdutyTime === "" || offdutyTime === "")){
+        return 0
+    }
+    startTime = "09:00"
+    endTime = "17:30"
+    const st = Number.parseInt(startTime.slice(0,2))*60
+    const et = Number.parseInt(endTime.slice(0,2))*60
+    const wt = et - st
+    const odt = Number.parseInt(offdutyTime.slice(0, 2)) * 60 + Number.parseInt(offdutyTime.slice(3))
+    const dt = Number.parseInt(dutyTime.slice(0, 2)) * 60 + Number.parseInt(dutyTime.slice(3))
+    const rwt = dt - odt
+    if ((odt <= st) && (dt >=et) && (rwt>=wt)){
+        return 1
+    }
+    return 0
+}
 
 var successJson = {
     code: 200,
@@ -147,12 +141,4 @@ var failJson = {
     code: 100,
     msg: 'fail',
     result: {}
-}
-
-function isWorkDay(time){
-    const day = new Date(time).getDay()
-    if( day !== 0 || day !== 6 ){
-        return true
-    }
-    return false
 }

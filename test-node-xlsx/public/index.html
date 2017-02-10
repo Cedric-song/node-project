@@ -2,17 +2,85 @@
 <html lang="zh-cmn-Hans">
 <head>
     <title>Upload Files using XMLHttpRequest - Minimal</title>
-    <style>
-        .hide {
-            display: none;
-        }
+    <link rel="stylesheet" href="./bootstrap-3.3.7-dist/css/bootstrap.css">
+    <script src="./jquery/jquery-3.1.1.min.js"></script>
+    <script src="./jquery/tableExport.jquery.js"></script>
+    <script src="./bootstrap-3.3.7-dist/js/bootstrap.min.js"></script>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="./bootstrap-3.3.7-dist/bootstrap-table/bootstrap-table.min.css">
 
-        #formList ul li {
-            display: inline-block;
-        }
-    </style>
-    <script src="http://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
-    <script type="text/javascript">
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="./bootstrap-3.3.7-dist/bootstrap-table/bootstrap-table.min.js"></script>
+    <script src="./bootstrap-3.3.7-dist/bootstrap-table/extensions/export/bootstrap-table-export.min.js"></script>
+    <script src="./bootstrap-3.3.7-dist/bootstrap-table/extensions/toolbar/bootstrap-table-toolbar.js"></script>
+    <!-- <script src="./bootstrap-3.3.7-dist/bootstrap-table/extensions/editable/bootstrap-table-editable.js"></script> -->
+    <!-- <script src="./bootstrap-3.3.7-dist/bootstrap-table/extensions/resizable/bootstrap-table-resizable.js"></script> -->
+    <script src="./bootstrap-3.3.7-dist/bootstrap-table/extensions/filter-control/bootstrap-table-filter-control.js"></script>
+
+    <!-- Latest compiled and minified Locales -->
+    <script src="./bootstrap-3.3.7-dist/bootstrap-table/locale/bootstrap-table-zh-CN.min.js"></script>
+
+ 
+</head>
+<body style="padding: 0;margin:0">
+<div class="container" style="margin: 0;width: 100%">
+<div class="panel panel-default" style="margin: 0">
+    <div class="panel-heading">
+        <small style="float: right;line-height: 5;font-weight: bold;">Version: 0.0.1</small>
+        <center style="font-size: 24px;font-weight: bold;">简易考勤处理平台</center>
+    </div>
+    <div class="panel-body">
+        <div id="fileName" style="display: none;"></div>
+        <div id="fileSize" style="display: none;"></div>
+        <div id="fileType" style="display: none;"></div>
+        <div id="progressNumber" style="display: none;"></div>
+    
+        <div id="toolbar">
+            <form id = "frmUploadFile" style="display: inline-block;">
+                <input class="btn btn-default"  type="file" name="files" id="fileToUpload" onchange="fileSelected();" />
+            </form>
+            <button class="btn btn-default" onclick="uploadFile()" value="Upload">
+                上传
+            </button>
+            <button class="btn btn-small btn-default" id="btn-create" >创建表格</button>
+            <select name="" class="btn btn-small btn-default" id="work-day"><option value=""> --切换为非工作日-- </option></select>
+            <select name="" class="btn btn-small btn-default" id="unwork-day"><option value=""> --切换为工作日-- </option></select>
+        </div>
+            <table id="formList" class="table table-bordered" data-toggle="table" data-locale="zh-CN" data-toolbar="#toolbar"
+               data-search="true"
+               data-advanced-search="true"
+               data-id-table="advancedTable"
+               data-show-refresh="false"
+               data-show-toggle="false"
+               data-show-export="true"
+               data-height="600"
+               data-show-pagination-switch="false"
+               data-pagination="false"
+               data-id-field="id"
+               data-show-footer="false"
+               data-show-columns="true"
+               data-row-style="rowStyle"
+               >
+                <thead>            
+                  <tr>
+                    <th data-field="cardID" data-sortable="true">考勤号码</th>
+                    <th data-field="date" data-sortable="true">日期</th>
+                    <th data-field="name" data-sortable="true">姓名</th>
+                    <th data-field="ondutyTime" data-sortable="true" >上班卡</th>
+                    <th data-field="offdutyTime" data-sortable="true">下班卡</th>
+                    <th data-field="isOverTime" data-sortable="true" >是否加班</th>
+                    <th data-field="overTimeLength" data-sortable="true">加班时长</th>
+                    <th data-field="isHoliday" data-sortable="true">是否工作日</th>
+                    <th data-field="isOnTime" data-sortable="true" >考勤正常</th>
+                  </tr>
+                </thead>
+            </table>
+    </div>
+</div>
+</div>
+   <script type="text/javascript">
+    var workDayList = new Set()
+    var unworkDayList = new Set()
     function fileSelected() {
         var file = document.getElementById('fileToUpload').files[0];
         if (file) {
@@ -21,7 +89,6 @@
                 fileSize = (Math.round(file.size * 100 / (1024 * 1024)) / 100).toString() + 'MB';
             else
                 fileSize = (Math.round(file.size * 100 / 1024) / 100).toString() + 'KB';
-
             document.getElementById('fileName').innerHTML = 'Name: ' + file.name;
             document.getElementById('fileSize').innerHTML = 'Size: ' + fileSize;
             document.getElementById('fileType').innerHTML = 'Type: ' + file.type;
@@ -31,13 +98,12 @@
     function uploadFile() {
         
         var fd = new FormData($("#frmUploadFile")[0]);
-        // fd.append("fileToUpload", document.getElementById('fileToUpload').files[0]);
         var xhr = new XMLHttpRequest();
         xhr.upload.addEventListener("progress", uploadProgress, false);
         xhr.addEventListener("load", uploadComplete, false);
         xhr.addEventListener("error", uploadFailed, false);
         xhr.addEventListener("abort", uploadCanceled, false);
-        xhr.open("POST", "http://localhost:7777/uploadFile");
+        xhr.open("POST", "http://localhost:3000/uploadFile");
         xhr.send(fd);
     }
 
@@ -54,7 +120,8 @@
         /* This event is raised when the server send back a response */
         var data = JSON.parse(evt.target.response)
         if( data.code === 200 ){
-            $('.btn-create').attr('data-targetPath',data.result.targetPath).show()
+            $('#btn-create').attr('data-targetPath',data.result.targetPath).show()
+            alert("Upload File to "+data.result.targetPath+" SUCCESS!")
         }
     }
 
@@ -65,64 +132,83 @@
     function uploadCanceled(evt) {
         alert("The upload has been canceled by the user or the browser dropped the connection.");
     }
-
-    function getList(item){
-        var self = item 
-        
-        $.get('/getList?targetPath=' + $(self).attr('data-targetPath') + '&category=' + $(self).attr('data-category'), function(data) {
-            var items = data.result.data
-            var arr = []
-            items.forEach(function(item){
-                arr.push(`
-                    <tr>
-                        <td> ${item.cardID}</td>
-                        <td> ${item.date}</td>
-                        <td> ${item.name}</td>
-                        <td> ${item.ondutyTime}</td>
-                        <td> ${item.offdutyTime}</td>
-                        <td> ${item.isOverTime === true ? '是' : '否'} </td>
-                        <td> ${item.overTimeLength}</td>
-                    </tr>    
-                `.trim())
-            })
-            $("#formList").append(arr.join(""))
-        })
+    function isWorkDay(time){
+        const day = new Date(time).getDay()
+        if(workDayList.has(time)){
+            return true
+        }else if(unworkDayList.has(time)){
+            return false
+        } 
+        else if( day !== 0 && day !== 6 ){
+            return true
+        }
+        return false
     }
+    function updateOption(elid,data){
+        var html = []
+        for (let day of data){
+            html.push(`<option value="${day}">${day}</option>`)
+        }
+        $("#"+elid +" option").not($("#"+elid +" option")[0]).remove()
+        $("#"+elid).append(html)
+    }
+    function departDay(data){
+            var workData = []
+            var ndata = JSON.parse(JSON.stringify(data))
+            ndata.map(function(item){
+                var originDay = item.date
+                if (isWorkDay(originDay)){
+                    workDayList.add(originDay)
+                    item.isHoliday = "是"
+                    workData.push(item)
+                }else{
+                    item.isOnTime = "是"
+                    item.isHoliday = "否"
+                    unworkDayList.add(originDay)
+                    workData.push(item)
+                }                
+            })
+            return {items:workData,workday:workDayList,unworkday:unworkDayList}
+    }
+    function rowStyle(row,index){
+        if(row.isOnTime=="否"){
+            return {classes:"danger"}
+        }else if (row.isHoliday=="是"){
+            return { classes: "info"} 
+        }else{
+            return {}
+        }
+    }
+    function initTable(id,data){
+        var workData = departDay(data)
+        updateOption("work-day",workData.workday)
+        updateOption("unwork-day",workData.unworkday)
+        $("#"+id).bootstrapTable('load',workData.items) 
+    }
+    $("#btn-create").click(function(){
+        $.get('/getList?targetPath=' + $("#btn-create").attr('data-targetPath') + '&cate',function(origindata){
+            workDayList.clear()
+            unworkDayList.clear()
+            initTable("formList",origindata)  
+            $("#work-day").change(function(){
+                var v = $("#work-day").val()
+                if( v !== ''){
+                    workDayList.delete(v)
+                    unworkDayList.add(v)
 
-
+                }
+                initTable("formList",origindata)
+            })
+            $("#unwork-day").change(function(){
+                var v = $("#unwork-day").val()
+                if( v !== ''){
+                    workDayList.add(v)
+                    unworkDayList.delete(v)
+                }
+                initTable("formList",origindata)
+            })
+        })
+    });
     </script>
-</head>
-<body>
-    <form class = "form-horizontal" enctype='multipart/form-data' method='post' action='javascript:;' role = "form" id = "frmUploadFile">
-        <div class="row">
-            <label for="fileToUpload">Select a File to Upload</label>
-            <input type="file" name="files" id="fileToUpload" onchange="fileSelected();" />
-        </div>
-        <div id="fileName"></div>
-        <div id="fileSize"></div>
-        <div id="fileType"></div>
-        <div class="row">
-            <input type="button" onclick="uploadFile()" value="Upload" />
-        </div>
-        <div id="progressNumber"></div>
-    </form>
-
-    <button class="btn-create hide" data-category="all" onclick="getList(this)">create all data</button>
-    <button class="btn-create hide" data-category="workOverTime" onclick="getList(this)">create workOverTime data</button>
-    <button class="btn-create hide" data-category="late" onclick="getList(this)">create late data</button>
-    <button class="btn-create hide" data-category="latePunish" onclick="getList(this)">create latePunish data</button>
-    <div>
-        <table border="1" id="formList">
-          <tr>
-            <th>考勤号码</th>
-            <th>日期</th>
-            <th>姓名</th>
-            <th>上班卡</th>
-            <th>下班卡</th>
-            <th>是否加班</th>
-            <th>加班时长</th>
-          </tr>
-        </table>
-    </div>
 </body>
 </html>
